@@ -3,7 +3,9 @@ const path = require('path');
 
 const config = require('../config.json');
 
-const [, , pathToRead, date] = process.argv;
+const [, , pathToRead, date, type] = process.argv;
+
+const types = ['delete', 'move'];
 
 /**
  * @param {Date} date
@@ -27,19 +29,35 @@ function getFullDate(date) {
   const files = fs.readdirSync(pathToRead).map((file) => ({ stat: fs.statSync(path.join(pathToRead, file)), file: path.join(pathToRead, file), fileName: file }));
 
   if (date) {
+    if (!type || !types.includes(type)) {
+      console.error('You need to use one of the following types:', types.join(', '));
+      process.exit(1);
+    }
+
     console.info('Entered date:', date);
-    const filesToMove = files.filter((file) => getFullDate(file.stat.atime) === date);
+    const filesToMove = files.filter((file) => getFullDate(file.stat.ctime) === date);
     const destinationFolder = path.join(config.destination, date);
 
     if (!fs.existsSync(destinationFolder)) {
       fs.mkdirSync(destinationFolder);
     }
 
-    filesToMove.forEach((file) => fs.copyFileSync(file.file, path.join(destinationFolder, file.fileName)));
+    switch (type) {
+      case 'delete':
+        filesToMove.forEach((file) => fs.unlinkSync(file.file));
+        break;
+
+      case 'move':
+        filesToMove.forEach((file) => fs.copyFileSync(file.file, path.join(destinationFolder, file.fileName)));
+        break;
+
+      default:
+        throw new Error('Unknown type: ' + type);
+    }
 
     console.log(filesToMove);
   } else {
-    const dates = [...new Set(files.map((stat) => getFullDate(stat.stat.atime)))].sort();
+    const dates = [...new Set(files.map((stat) => getFullDate(stat.stat.ctime)))].sort();
 
     console.info('*** Select one of the following date for files:');
     console.info('');
