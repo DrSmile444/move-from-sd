@@ -1,18 +1,35 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-const config = require('../config.json');
+import inquirer from 'inquirer';
+
+const config = fs.readFileSync('./config.json');
 
 const [, , pathToRead, date, type] = process.argv;
 
-const types = ['delete', 'move'];
+const types = ['move', 'delete'];
 
 /**
  * @param {Date} date
  * @returns {string}
  * */
 function getFullDate(date) {
-  return date.toISOString().slice(0, 10)
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * @param {any[]} paths
+ */
+function deleteFiles(paths) {
+  paths.forEach((file) => fs.unlinkSync(file.file));
+}
+
+/**
+ * @param {string} destinationFolder
+ * @param {any[]} paths
+ */
+function moveFiles(destinationFolder, paths) {
+  paths.forEach((file) => fs.copyFileSync(file.file, path.join(destinationFolder, file.fileName)));
 }
 
 (async () => {
@@ -27,14 +44,53 @@ function getFullDate(date) {
   }
 
   const files = fs.readdirSync(pathToRead).map((file) => ({ stat: fs.statSync(path.join(pathToRead, file)), file: path.join(pathToRead, file), fileName: file }));
+  const dates = [...new Set(files.map((stat) => getFullDate(stat.stat.ctime)))].sort();
 
-  if (date) {
-    if (!type || !types.includes(type)) {
-      console.error('You need to use one of the following types:', types.join(', '));
-      process.exit(1);
+  inquirer.prompt([
+    {
+      type: 'list',
+      name: 'date',
+      message: 'Select files date:',
+      choices: dates,
+    },
+    {
+      type: 'list',
+      name: 'type',
+      message: 'Select type to process:',
+      choices: types,
+    },
+    {
+      type: 'input',
+      name: 'name',
+      message: 'Enter name for the folder:',
+      when: (questions) => questions.type === 'move',
+    },
+    {
+      type: 'confirm',
+      name: 'deleteMoved',
+      message: 'Delete photos after move?',
+      default: true,
+      when: (questions) => questions.type === 'move'
+    },
+    {
+      type: 'confirm',
+      name: 'confirmDelete',
+      message: 'Are you sure you want to delete the photos?',
+      default: false,
+      when: (questions) => questions.type === 'delete' || questions.deleteMoved
+    }
+  ]).then((questions) => {
+    const sanitizedQuestions = JSON.parse(JSON.stringify(questions));
+
+    if (sanitizedQuestions.name) {
+      sanitizedQuestions.name = sanitizedQuestions.name.toLowerCase().replace(/ /g, '-');
     }
 
-    console.info('Entered date:', date);
+    if (!sanitizedQuestions.confirmDelete) {
+      console.info('*** Aborted.');
+      return;
+    }
+
     const filesToMove = files.filter((file) => getFullDate(file.stat.ctime) === date);
     const destinationFolder = path.join(config.destination, date);
 
@@ -44,28 +100,27 @@ function getFullDate(date) {
 
     switch (type) {
       case 'delete':
-        filesToMove.forEach((file) => fs.unlinkSync(file.file));
+        deleteFiles(filesToMove);
         break;
 
       case 'move':
-        filesToMove.forEach((file) => fs.copyFileSync(file.file, path.join(destinationFolder, file.fileName)));
+        moveFiles(destinationFolder, filesToMove);
         break;
 
       default:
         throw new Error('Unknown type: ' + type);
     }
 
-    console.log(filesToMove);
+    if (sanitizedQuestions.deleteMoved) {
+      deleteFiles(filesToMove);
+    }
 
     if (type === 'move') {
       console.log('Moved files into:', destinationFolder);
     }
-  } else {
-    const dates = [...new Set(files.map((stat) => getFullDate(stat.stat.ctime)))].sort();
 
-    console.info('*** Select one of the following date for files:');
-    console.info('');
-    console.info(dates.join('\n'));
-    console.info('');
-  }
+    if (sanitizedQuestions.deleteMoved) {
+      console.log('Deleted files');
+    }
+  });
 })();

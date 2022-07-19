@@ -5,9 +5,20 @@
   "main": "./src/index.js",
   "scripts": {
     "start": "node ./src/index.js",
+    "start:mock": "node ./src/index.js `pwd`",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "engines": {
+    "node": ">=13"
+  },
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "inquirer": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.1"
+  }
 }
