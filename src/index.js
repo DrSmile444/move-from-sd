@@ -56,6 +56,10 @@ function getFullDate(date) {
     }
 
     console.log(filesToMove);
+
+    if (type === 'move') {
+      console.log('Moved files into:', destinationFolder);
+    }
   } else {
     const dates = [...new Set(files.map((stat) => getFullDate(stat.stat.ctime)))].sort();
 
