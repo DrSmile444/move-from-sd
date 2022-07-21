@@ -16,7 +16,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "inquirer": "^9.0.0"
+    "inquirer": "^9.0.0",
+    "inquirer-fuzzy-path": "^2.3.0"
   },
   "devDependencies": {
     "@types/inquirer": "^8.2.1"
