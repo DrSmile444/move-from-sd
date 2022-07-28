@@ -17,7 +17,8 @@
   "type": "module",
   "dependencies": {
     "inquirer": "^9.0.0",
-    "inquirer-fuzzy-path": "^2.3.0"
+    "inquirer-fuzzy-path": "^2.3.0",
+    "ora": "^6.1.2"
   },
   "devDependencies": {
     "@types/inquirer": "^8.2.1"

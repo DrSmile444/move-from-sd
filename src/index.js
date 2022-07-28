@@ -1,8 +1,10 @@
 import fs from "fs";
+import fsp from "fs/promises";
 import path from "path";
 
 import inquirer from "inquirer";
 import inquirerFuzzyPath from "inquirer-fuzzy-path";
+import ora from "ora";
 
 const config = JSON.parse(fs.readFileSync("./config.json").toString());
 
@@ -28,7 +30,7 @@ function getFullDate(date) {
  * @param {any[]} paths
  */
 function deleteFiles(paths) {
-  paths.forEach((file) => fs.unlinkSync(file.file));
+  return Promise.all(paths.map((file) => fsp.unlink(file.file)));
 }
 
 /**
@@ -36,8 +38,10 @@ function deleteFiles(paths) {
  * @param {any[]} paths
  */
 function moveFiles(destinationFolder, paths) {
-  paths.forEach((file) =>
-    fs.copyFileSync(file.file, path.join(destinationFolder, file.fileName))
+  return Promise.all(
+    paths.map((file) =>
+      fsp.copyFile(file.file, path.join(destinationFolder, file.fileName))
+    )
   );
 }
 
@@ -126,7 +130,7 @@ function getFiles(pathToRead) {
           questions.type === "delete" || questions.deleteMoved,
       },
     ])
-    .then((questions) => {
+    .then(async (questions) => {
       const sanitizedQuestions = JSON.parse(JSON.stringify(questions));
 
       if (sanitizedQuestions.name) {
@@ -168,20 +172,34 @@ function getFiles(pathToRead) {
       }
 
       switch (type) {
-        case "delete":
-          deleteFiles(filesToMove);
+        case "delete": {
+          const spinner = ora(`Deleting files`);
+          spinner.color = "red";
+          spinner.start();
+          await deleteFiles(filesToMove);
+          spinner.succeed();
           break;
+        }
 
-        case "move":
-          moveFiles(destinationFolder, filesToMove);
+        case "move": {
+          const spinner = ora(`Moving files`);
+          spinner.color = "yellow";
+          spinner.start();
+          await moveFiles(destinationFolder, filesToMove);
+          spinner.succeed();
           break;
+        }
 
         default:
           throw new Error("Unknown type: " + type);
       }
 
       if (deleteMoved) {
-        deleteFiles(filesToMove);
+        const spinner = ora(`Deleting files`);
+        spinner.color = "red";
+        spinner.start();
+        await deleteFiles(filesToMove);
+        spinner.succeed();
       }
 
       if (type === "move") {
