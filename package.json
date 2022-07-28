@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node ./src/index.js",
     "start:mock": "node ./src/index.js `pwd`",
+    "lint": "xo --prettier",
+    "lint:fix": "npm run lint -- --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -22,6 +24,7 @@
     "pretty-bytes": "^6.0.0"
   },
   "devDependencies": {
-    "@types/inquirer": "^8.2.1"
+    "@types/inquirer": "^8.2.1",
+    "xo": "^0.51.0"
   }
 }
