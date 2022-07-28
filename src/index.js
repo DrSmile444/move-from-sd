@@ -1,23 +1,23 @@
-import fs from "fs";
-import fsp from "fs/promises";
-import path from "path";
+#!/usr/bin/env node
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
 
-import prettyBytes from "pretty-bytes";
-import inquirer from "inquirer";
-import inquirerFuzzyPath from "inquirer-fuzzy-path";
-import ora from "ora";
+import prettyBytes from 'pretty-bytes';
+import inquirer from 'inquirer';
+import inquirerFuzzyPath from 'inquirer-fuzzy-path';
+import ora from 'ora';
 
-const config = JSON.parse(fs.readFileSync("./config.json").toString());
+const config = JSON.parse(fs.readFileSync('./config.json').toString());
 
 console.log(config);
 
-const [, , pathToRead] = process.argv;
+// Const fileTypes = ['.CR2', '.CR3', '']
+const types = ['move', 'delete'];
+const rootPath = '/Volumes/';
 
-// const fileTypes = ['.CR2', '.CR3', '']
-const types = ["move", "delete"];
-const rootPath = "/Volumes/";
-
-inquirer.registerPrompt("fuzzypath", inquirerFuzzyPath);
+inquirer.registerPrompt('fuzzypath', inquirerFuzzyPath);
 
 /**
  * @param {Date} date
@@ -41,8 +41,8 @@ function deleteFiles(paths) {
 function moveFiles(destinationFolder, paths) {
   return Promise.all(
     paths.map((file) =>
-      fsp.copyFile(file.file, path.join(destinationFolder, file.fileName))
-    )
+      fsp.copyFile(file.file, path.join(destinationFolder, file.fileName)),
+    ),
   );
 }
 
@@ -55,7 +55,7 @@ function getFiles(pathToRead) {
     const stat = fs.statSync(fullFilePath);
 
     return {
-      stat: stat,
+      stat,
       file: fullFilePath,
       size: stat.size,
       fileName: file,
@@ -69,13 +69,13 @@ function getFiles(pathToRead) {
       value: date,
       name:
         date +
-        " (" +
+        ' (' +
         prettyBytes(
           files
             .filter((fileMeta) => fileMeta.fullDate === date)
-            .reduce((accumulator, value) => accumulator + value.size, 0)
+            .reduce((accumulator, value) => accumulator + value.size, 0),
         ) +
-        ")",
+        ')',
     }));
 
   return {
@@ -87,66 +87,65 @@ function getFiles(pathToRead) {
 (async () => {
   const { root } = await inquirer.prompt([
     {
-      type: "fuzzypath",
-      name: "root",
-      excludePath: (nodePath) => nodePath.startsWith("node_modules"),
-      excludeFilter: (nodePath) => {
-        return nodePath === rootPath;
-      },
-      itemType: "directory",
+      type: 'fuzzypath',
+      name: 'root',
+      itemType: 'directory',
       rootPath,
-      message: "Select a volume:",
+      message: 'Select a volume:',
       suggestOnly: false,
       depthLimit: 0,
+      excludeFilter(nodePath) {
+        return nodePath === rootPath;
+      },
     },
   ]);
 
   inquirer
     .prompt([
       {
-        type: "fuzzypath",
-        name: "pathToRead",
-        itemType: "directory",
+        type: 'fuzzypath',
+        name: 'pathToRead',
+        itemType: 'directory',
         rootPath: root,
-        message: "Select a target directory for your photos:",
+        message: 'Select a target directory for your photos:',
         suggestOnly: false,
         depthLimit: 5,
       },
       {
-        type: "list",
-        name: "date",
-        message: "Select files date:",
-        choices: (questions) => {
+        type: 'list',
+        name: 'date',
+        message: 'Select files date:',
+        choices(questions) {
           const { dates } = getFiles(questions.pathToRead);
           return dates;
         },
       },
       {
-        type: "list",
-        name: "type",
-        message: "Select type to process:",
+        type: 'list',
+        name: 'type',
+        message: 'Select type to process:',
         choices: types,
       },
       {
-        type: "input",
-        name: "name",
-        message: "Enter name for the folder:",
-        when: (questions) => questions.type === "move",
+        type: 'input',
+        name: 'name',
+        message: 'Enter name for the folder:',
+        when: (questions) => questions.type === 'move',
       },
       {
-        type: "confirm",
-        name: "deleteMoved",
-        message: "Delete photos after move?",
+        type: 'confirm',
+        name: 'deleteMoved',
+        message: 'Delete photos after move?',
         default: true,
-        when: (questions) => questions.type === "move",
+        when: (questions) => questions.type === 'move',
       },
       {
-        type: "confirm",
-        name: "confirmDelete",
-        message: "Are you sure you want to delete the photos?",
+        type: 'confirm',
+        name: 'confirmDelete',
+        message: 'Are you sure you want to delete the photos?',
         default: false,
         when: (questions) =>
-          questions.type === "delete" || questions.deleteMoved,
+          questions.type === 'delete' || questions.deleteMoved,
       },
     ])
     .then(async (questions) => {
@@ -155,35 +154,35 @@ function getFiles(pathToRead) {
       if (sanitizedQuestions.name) {
         sanitizedQuestions.name = sanitizedQuestions.name
           .toLowerCase()
-          .replace(/ /g, "-");
+          .replace(/ /g, '-');
       }
 
       const { pathToRead, confirmDelete, date, deleteMoved, type } =
         sanitizedQuestions;
 
       if (!pathToRead) {
-        console.error("You need to provide the path in argv.");
+        console.error('You need to provide the path in argv.');
         process.exit(1);
       }
 
       if (!fs.existsSync(pathToRead)) {
-        console.error("Provided path is not valid:", pathToRead);
+        console.error('Provided path is not valid:', pathToRead);
         process.exit(1);
       }
 
       const { files } = getFiles(pathToRead);
 
       if (deleteMoved && !confirmDelete) {
-        console.info("*** Aborted.");
+        console.info('*** Aborted.');
         return;
       }
 
       const filesToMove = files.filter(
-        (file) => getFullDate(file.stat.ctime) === date
+        (file) => getFullDate(file.stat.ctime) === date,
       );
       const destinationFolder = path.join(
         config.destination,
-        date + (sanitizedQuestions.name ? "-" + sanitizedQuestions.name : "")
+        date + (sanitizedQuestions.name ? '-' + sanitizedQuestions.name : ''),
       );
 
       if (!fs.existsSync(destinationFolder)) {
@@ -191,18 +190,18 @@ function getFiles(pathToRead) {
       }
 
       switch (type) {
-        case "delete": {
+        case 'delete': {
           const spinner = ora(`Deleting files`);
-          spinner.color = "red";
+          spinner.color = 'red';
           spinner.start();
           await deleteFiles(filesToMove);
           spinner.succeed();
           break;
         }
 
-        case "move": {
+        case 'move': {
           const spinner = ora(`Moving files`);
-          spinner.color = "yellow";
+          spinner.color = 'yellow';
           spinner.start();
           await moveFiles(destinationFolder, filesToMove);
           spinner.succeed();
@@ -210,23 +209,23 @@ function getFiles(pathToRead) {
         }
 
         default:
-          throw new Error("Unknown type: " + type);
+          throw new Error('Unknown type: ' + type);
       }
 
       if (deleteMoved) {
         const spinner = ora(`Deleting files`);
-        spinner.color = "red";
+        spinner.color = 'red';
         spinner.start();
         await deleteFiles(filesToMove);
         spinner.succeed();
       }
 
-      if (type === "move") {
-        console.log("Moved files into:", destinationFolder);
+      if (type === 'move') {
+        console.log('Moved files into:', destinationFolder);
       }
 
       if (deleteMoved) {
-        console.log("Deleted files");
+        console.log('Deleted files');
       }
     });
 })();
