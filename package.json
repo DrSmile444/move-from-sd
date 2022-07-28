@@ -18,7 +18,8 @@
   "dependencies": {
     "inquirer": "^9.0.0",
     "inquirer-fuzzy-path": "^2.3.0",
-    "ora": "^6.1.2"
+    "ora": "^6.1.2",
+    "pretty-bytes": "^6.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "^8.2.1"

@@ -2,6 +2,7 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 
+import prettyBytes from "pretty-bytes";
 import inquirer from "inquirer";
 import inquirerFuzzyPath from "inquirer-fuzzy-path";
 import ora from "ora";
@@ -49,15 +50,33 @@ function moveFiles(destinationFolder, paths) {
  * @param {string} pathToRead
  * */
 function getFiles(pathToRead) {
-  const files = fs.readdirSync(pathToRead).map((file) => ({
-    stat: fs.statSync(path.join(pathToRead, file)),
-    file: path.join(pathToRead, file),
-    fileName: file,
-  }));
+  const files = fs.readdirSync(pathToRead).map((file) => {
+    const fullFilePath = path.join(pathToRead, file);
+    const stat = fs.statSync(fullFilePath);
 
-  const dates = [
-    ...new Set(files.map((stat) => getFullDate(stat.stat.ctime))),
-  ].sort();
+    return {
+      stat: stat,
+      file: fullFilePath,
+      size: stat.size,
+      fileName: file,
+      fullDate: getFullDate(stat.ctime),
+    };
+  });
+
+  const dates = [...new Set(files.map((fileMeta) => fileMeta.fullDate))]
+    .sort()
+    .map((date) => ({
+      value: date,
+      name:
+        date +
+        " (" +
+        prettyBytes(
+          files
+            .filter((fileMeta) => fileMeta.fullDate === date)
+            .reduce((accumulator, value) => accumulator + value.size, 0)
+        ) +
+        ")",
+    }));
 
   return {
     files,
