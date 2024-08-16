@@ -3,19 +3,20 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import open from 'open';
 
 import prettyBytes from 'pretty-bytes';
 import inquirer from 'inquirer';
 import inquirerFuzzyPath from 'inquirer-fuzzy-path';
 import ora from 'ora';
+import {osUtils} from './os';
 
 const config = JSON.parse(fs.readFileSync('./config.json').toString());
 
-console.log(config);
+// console.log(config);
 
 // Const fileTypes = ['.CR2', '.CR3', '']
 const types = ['move', 'delete'];
-const rootPath = '/Volumes/';
 
 inquirer.registerPrompt('fuzzypath', inquirerFuzzyPath);
 
@@ -46,57 +47,16 @@ function moveFiles(destinationFolder, paths) {
   );
 }
 
-/**
- * @param {string} pathToRead
- * */
-function getFiles(pathToRead) {
-  const files = fs.readdirSync(pathToRead).map((file) => {
-    const fullFilePath = path.join(pathToRead, file);
-    const stat = fs.statSync(fullFilePath);
-
-    return {
-      stat,
-      file: fullFilePath,
-      size: stat.size,
-      fileName: file,
-      fullDate: getFullDate(stat.ctime),
-    };
-  });
-
-  const dates = [...new Set(files.map((fileMeta) => fileMeta.fullDate))]
-    .sort()
-    .map((date) => ({
-      value: date,
-      name:
-        date +
-        ' (' +
-        prettyBytes(
-          files
-            .filter((fileMeta) => fileMeta.fullDate === date)
-            .reduce((accumulator, value) => accumulator + value.size, 0),
-        ) +
-        ')',
-    }));
-
-  return {
-    files,
-    dates,
-  };
-}
-
 (async () => {
-  const { root } = await inquirer.prompt([
+  const { drive } = await inquirer.prompt([
     {
-      type: 'fuzzypath',
-      name: 'root',
-      itemType: 'directory',
-      rootPath,
+      type: 'list',
+      name: 'drive',
       message: 'Select a volume:',
-      suggestOnly: false,
-      depthLimit: 0,
-      excludeFilter(nodePath) {
-        return nodePath === rootPath;
-      },
+      choices(questions) {
+        const drives = osUtils.getDrives();
+        return drives.map(({ name, drive }) => ({ name: drive + " - " + name, value: drive }));
+      }
     },
   ]);
 
@@ -106,7 +66,7 @@ function getFiles(pathToRead) {
         type: 'fuzzypath',
         name: 'pathToRead',
         itemType: 'directory',
-        rootPath: root,
+        rootPath: drive,
         message: 'Select a target directory for your photos:',
         suggestOnly: false,
         depthLimit: 5,
@@ -116,8 +76,8 @@ function getFiles(pathToRead) {
         name: 'date',
         message: 'Select files date:',
         choices(questions) {
-          const { dates } = getFiles(questions.pathToRead);
-          return dates;
+          const { dates } = osUtils.getFiles(questions.pathToRead);
+          return [new inquirer.Separator('--- Dates:'), ...dates];
         },
       },
       {
@@ -170,7 +130,7 @@ function getFiles(pathToRead) {
         process.exit(1);
       }
 
-      const { files } = getFiles(pathToRead);
+      const { files } = osUtils.getFiles(pathToRead);
 
       if (deleteMoved && !confirmDelete) {
         console.info('*** Aborted.');
@@ -178,8 +138,9 @@ function getFiles(pathToRead) {
       }
 
       const filesToMove = files.filter(
-        (file) => getFullDate(file.stat.ctime) === date,
+        (file) => getFullDate(file.stat.atime) === date,
       );
+
       const destinationFolder = path.join(
         config.destination,
         date + (sanitizedQuestions.name ? '-' + sanitizedQuestions.name : ''),
@@ -222,6 +183,7 @@ function getFiles(pathToRead) {
 
       if (type === 'move') {
         console.log('Moved files into:', destinationFolder);
+        open(destinationFolder);
       }
 
       if (deleteMoved) {

@@ -4,7 +4,8 @@
   "description": "",
   "main": "./src/index.js",
   "scripts": {
-    "start": "node ./src/index.js",
+    "start": "npx tsx ./src",
+    "start:swc": "npx swc ./src",
     "start:mock": "node ./src/index.js `pwd`",
     "lint": "xo --prettier",
     "lint:fix": "npm run lint -- --fix",
@@ -18,13 +19,23 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "inquirer": "^9.0.0",
+    "@types/node": "^22.2.0",
+    "fs-extra": "^11.2.0",
+    "fuzzy-search": "^3.2.1",
+    "inquirer": "^9.3.6",
     "inquirer-fuzzy-path": "^2.3.0",
+    "open": "^10.1.0",
     "ora": "^6.1.2",
-    "pretty-bytes": "^6.0.0"
+    "pretty-bytes": "^6.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
   },
   "devDependencies": {
+    "@swc/cli": "^0.4.0",
+    "@swc/core": "^1.7.11",
     "@types/inquirer": "^8.2.1",
+    "@types/inquirer-fuzzy-path": "^2.3.9",
     "xo": "^0.51.0"
   }
 }
