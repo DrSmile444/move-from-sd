@@ -1,5 +1,8 @@
 export interface Drive {
     drive: string;
+    size: number;
+    freeSpace: number;
+    driveType: 'local' | 'removable' | 'unknown';
     name: string;
 }
 
