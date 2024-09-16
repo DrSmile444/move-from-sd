@@ -48,13 +48,14 @@ function moveFiles(destinationFolder, paths) {
 }
 
 (async () => {
+  const drives = await osUtils.getDrives();
+
   const { drive } = await inquirer.prompt([
     {
       type: 'list',
       name: 'drive',
       message: 'Select a volume:',
       choices(questions) {
-        const drives = osUtils.getDrives();
         return drives.map(({ name, drive }) => ({ name: drive + " - " + name, value: drive }));
       }
     },
