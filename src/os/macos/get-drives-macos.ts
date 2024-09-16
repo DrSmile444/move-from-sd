@@ -1,5 +1,5 @@
 import checkDiskSpace from 'check-disk-space';
-import drivelist from 'drivelist';
+import * as drivelist from 'drivelist';
 
 import { Drive } from '../../interfaces';
 
