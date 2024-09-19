@@ -18,7 +18,7 @@ export function getFilesWindows(pathToRead: string): FileList {
       file: fullFilePath,
       size: stat.size,
       fileName: file,
-      fullDate: getFullDate(stat.atimeMs),
+      fullDate: getFullDate(stat.mtime),
     };
   });
 
