@@ -17,6 +17,9 @@ export interface FileMeta {
     size: number;
     fileName: string;
     fullDate: string;
+    hasRawPhoto: boolean;
+    hasRelatedJpg: boolean;
+    isRaw: boolean;
 }
 
 export interface DateMeta {
