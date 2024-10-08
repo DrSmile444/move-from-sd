@@ -19,6 +19,7 @@ export interface FileMeta {
     fullDate: string;
     hasRawPhoto: boolean;
     hasRelatedJpg: boolean;
+    isVideo: boolean;
     isRaw: boolean;
 }
 

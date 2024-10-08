@@ -6,6 +6,7 @@ import { getFullDate } from '../../utils';
 import { FileList } from '../../interfaces';
 
 import rawList from '../../utils/raw-list.json';
+import videoList from '../../utils/video-list.json';
 
 /**
  * @param {string} pathToRead
@@ -39,6 +40,7 @@ export function getFilesWindows(pathToRead: string): FileList {
       hasRawPhoto: hasRawPhoto,
       hasRelatedJpg: hasRelatedJpg,
       isRaw: rawList.includes(fileExtension),
+      isVideo: videoList.includes(fileExtension),
     };
   });
 
